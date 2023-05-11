@@ -1,0 +1,15 @@
+load("@rules_cc//cc:defs.bzl", "cc_library")
+
+cc_library(
+    name = "dep",
+    hdrs = ["dep.h"],
+)
+
+cc_library(
+    name = "header",
+    hdrs = ["header.h"],
+    deps = [
+        ":dep",
+        "//subdir:dep",
+    ],
+)

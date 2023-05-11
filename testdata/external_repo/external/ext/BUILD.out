@@ -1,0 +1,9 @@
+load("@rules_cc//cc:defs.bzl", "cc_library")
+
+# invalid order because we dont want to "fix" external build files
+cc_library(
+    wrong_place = "test no reorder",
+    name = "external_dep",
+    hdrs = ["external_dep.h"],
+    visibility = ["//visibility:public"],
+)

@@ -1,0 +1,11 @@
+load("@rules_cc//cc:defs.bzl", "cc_library")
+
+# gazelle:ignore
+# gazelle:exclude subdir
+
+cc_library(
+    name = "subdir",
+    hdrs = [
+        "subdir/file.h",
+    ],
+)

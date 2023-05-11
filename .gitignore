@@ -1,0 +1,12 @@
+# bazel
+bazel-*
+
+ghidra_src
+
+# macOS
+.DS_Store
+
+# emacs
+*~
+\#*\#
+.\#*

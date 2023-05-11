@@ -1,0 +1,9 @@
+load("@rules_cc//cc:defs.bzl", "cc_library")
+
+# gazelle:ignore_subdir external
+
+cc_library(
+    name = "header",
+    hdrs = ["header.h"],
+    deps = ["@ext//:external_dep"],
+)

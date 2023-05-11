@@ -1,0 +1,5 @@
+new_local_repository(
+    name = "ext",
+    path = "@external",
+    build_file = "BUILD.ext",
+)
