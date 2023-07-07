@@ -54,8 +54,6 @@ gazelle(
     gazelle = ":gazelle-cclib",
 )
 
-# TODO(arostovtsev): exclude everything below from distro tarball
-
 # The files needed for distribution
 # A fake testdata directory is created so that
 # the build file has nothing missing, but we
