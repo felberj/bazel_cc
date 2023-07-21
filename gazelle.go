@@ -122,6 +122,11 @@ func (e *Extension) Imports(c *config.Config, r *rule.Rule, f *rule.File) []reso
 			fp = path.Join(split[2:]...)
 		}
 	}
+	includes := r.AttrStrings("includes")
+	if fp != "" && len(includes) != 0 {
+		log.Printf("includes only supported in root dir")
+		includes = nil
+	}
 	srcs := r.AttrStrings("hdrs")
 	imports := make([]resolve.ImportSpec, 0, len(srcs))
 	for _, src := range srcs {
@@ -133,6 +138,17 @@ func (e *Extension) Imports(c *config.Config, r *rule.Rule, f *rule.File) []reso
 			Imp: fmt.Sprintf("%s", filepath.Join(fp, src)),
 		}
 		imports = append(imports, spec)
+		for _, i := range includes {
+			src := strings.TrimPrefix(src, i+"/")
+			spec := resolve.ImportSpec{
+				// Lang is the language in which the import string appears (this should
+				// match Resolver.Name).
+				Lang: "cc",
+				// Imp is an import string for the library.
+				Imp: fmt.Sprintf("%s", filepath.Join(fp, src)),
+			}
+			imports = append(imports, spec)
+		}
 	}
 	return imports
 }
