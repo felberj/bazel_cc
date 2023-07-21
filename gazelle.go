@@ -18,6 +18,7 @@ import (
 	"github.com/bazelbuild/bazel-gazelle/repo"
 	"github.com/bazelbuild/bazel-gazelle/resolve"
 	"github.com/bazelbuild/bazel-gazelle/rule"
+	"github.com/bazelbuild/buildtools/build"
 )
 
 var cppHdrs = suffixes{
@@ -109,6 +110,74 @@ func (e *Extension) Name() string {
 	return "cc"
 }
 
+func (e *Extension) extractHdrs(r *rule.Rule, p string) []string {
+	if res := r.AttrStrings("hdrs"); res != nil {
+		return res
+	}
+	// parse glob expr, I could not find any existing implementation?!
+	ce, ok := r.Attr("hdrs").(*build.CallExpr)
+	if !ok {
+		return nil
+	}
+	id, ok := ce.X.(*build.Ident)
+	if !ok || id.Name != "glob" {
+		log.Printf("unable to handle hdrs of %q: Must be a string or glob", r.Name())
+		return nil
+	}
+	includes := build.Strings(ce.List[0])
+	if includes == nil {
+		log.Printf("unexpected glob expression: includes")
+		return nil
+	}
+	excludes := map[string]bool{}
+	if len(ce.List) > 1 {
+		as, ok := ce.List[1].(*build.AssignExpr)
+		if !ok {
+			log.Printf("unexpected glob expression: excludes assign")
+			return nil
+		}
+		if as.Op != "=" {
+			log.Printf("unexpected glob expression: excludes op")
+			return nil
+		}
+		if tk, ok := as.LHS.(*build.LiteralExpr); !ok || tk.Token != "exclude" {
+			log.Printf("unexpected glob expression: excludes LHS")
+			return nil
+		}
+		ex := build.Strings(as.RHS)
+		if excludes == nil {
+			log.Printf("unexpected glob expression: excludes RHS")
+			return nil
+		}
+		for _, e := range ex {
+			m, err := filepath.Glob(path.Join(p, e))
+			if err != nil {
+				log.Printf("error globbing %q: %v", e, err)
+				return nil
+			}
+			for _, mm := range m {
+				excludes[mm] = true
+			}
+		}
+
+	}
+	res := []string{}
+	for _, i := range includes {
+		m, err := filepath.Glob(path.Join(p, i))
+		if err != nil {
+			log.Printf("error globbing %q: %v", e, err)
+			return nil
+		}
+		for _, mm := range m {
+			if excludes[mm] {
+				continue
+			}
+			res = append(res, strings.TrimPrefix(mm, p+"/"))
+		}
+	}
+	return res
+}
+
 // Imports returns a list of ImportSpecs that can be used to import the rule
 // r. This is used to populate RuleIndex.
 //
@@ -124,10 +193,10 @@ func (e *Extension) Imports(c *config.Config, r *rule.Rule, f *rule.File) []reso
 	}
 	includes := r.AttrStrings("includes")
 	if fp != "" && len(includes) != 0 {
-		log.Printf("includes only supported in root dir")
+		log.Printf("includes only supported in root dir, but got %q", fp)
 		includes = nil
 	}
-	srcs := r.AttrStrings("hdrs")
+	srcs := e.extractHdrs(r, path.Dir(f.Path))
 	imports := make([]resolve.ImportSpec, 0, len(srcs))
 	for _, src := range srcs {
 		spec := resolve.ImportSpec{
