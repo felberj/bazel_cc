@@ -42,11 +42,7 @@ go_test(
 gazelle_binary(
     name = "gazelle-cclib",
     languages = [":cc"],
-    visibility = [
-        # Also make the binary available in the root of the repo for use, but
-        # not externally.
-        "//:__pkg__",
-    ],
+    visibility = ["//visibility:public"],
 )
 
 gazelle(
